@@ -1,4 +1,3 @@
-glob
 PIL
 discord_webhook
 environs
