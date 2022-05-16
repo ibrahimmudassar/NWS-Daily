@@ -30,16 +30,6 @@ for i in range(0, time_differential + 1):
     if data['hourly'][i]['pressure'] < low['pressure']:
         low = data['hourly'][i]
 
-print(low['pressure'] - 1013.25, "hPa", end=" ")
-print("In", datetime.datetime.fromtimestamp(
-    low['dt']).hour - current_hour, "hours")
-
-print()
-
-print(high['pressure'] - 1013.25, "hPa", end=" ")
-print("In", datetime.datetime.fromtimestamp(
-    high['dt']).hour - current_hour, "hours")
-
 # defines the graph
 fig = px.line(x=[i for i in range(0, time_differential + 1)],
               y=[data['hourly'][i]['pressure'] -
@@ -70,7 +60,7 @@ def embed_to_discord():
 
     # High
     embed.add_embed_field(
-        name="Low", value=f"""{high['pressure'] - 1013.25} hPa In {datetime.datetime.fromtimestamp(high['dt']).hour - current_hour} hours""", inline=False)
+        name="High", value=f"""{high['pressure'] - 1013.25} hPa In {datetime.datetime.fromtimestamp(high['dt']).hour - current_hour} hours""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
