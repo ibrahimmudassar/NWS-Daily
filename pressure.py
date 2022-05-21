@@ -1,15 +1,15 @@
 import requests
 from environs import Env  # For environment variables
-import datetime
+from datetime import datetime
 import plotly.express as px
 from discord_webhook import DiscordEmbed, DiscordWebhook  # Connect to discord
 import pytz
 
 
 # get the current hour
-current_hour = datetime.datetime.now(pytz.timezone('US/Eastern')).hour
+current_hour = datetime.now(pytz.timezone('US/Eastern'))
 # finds the hours between now and midnight
-time_differential = 24 - current_hour
+time_differential = 24 - current_hour.hour
 
 # Setting up environment variables
 env = Env()
@@ -17,6 +17,7 @@ env.read_env()  # read .env file, if it exists
 
 data = requests.get(
     "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env('API_KEY')).json()
+
 
 # this is a list of hour objects that have data sorted by their pressure
 list_of_hours = sorted([data['hourly'][k] for k in range(
@@ -47,13 +48,20 @@ if not (high['pressure'] - STANDARD_PRESSURE > 0 and low['pressure'] - STANDARD_
             range=[0, (high['pressure'] - STANDARD_PRESSURE) + margin])
 
 fig.write_image("fig1.png")
-high_time = datetime.datetime.fromtimestamp(high['dt'])  # naive
-high_time_aware = pytz.timezone('US/Eastern').localize(high_time)
-print(high_time_aware.hour)
-print(high_time_aware)
 
-print()
-print(datetime.datetime.now(pytz.timezone('UTC')).hour)
+
+high_time_absolute = pytz.timezone(
+    'UTC').localize(datetime.fromtimestamp(high['dt']))  # takes the UTC Time and makes it time aware
+high_time_relative = high_time_absolute - current_hour
+# rounded to the nearest hour
+high_time_relative = round(high_time_relative.total_seconds() / 3600)
+
+
+low_time_absolute = pytz.timezone(
+    'UTC').localize(datetime.fromtimestamp(low['dt']))
+low_time_relative = low_time_absolute - current_hour
+# rounded to the nearest hour
+low_time_relative = round(low_time_relative.total_seconds() / 3600)
 
 
 def embed_to_discord():
@@ -65,12 +73,12 @@ def embed_to_discord():
 
     # Low
     embed.add_embed_field(
-        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {pytz.timezone('UTC').localize(datetime.datetime.fromtimestamp(low['dt'])).hour - datetime.datetime.now().hour} hours""", inline=False)
+        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {low_time_relative} hours""", inline=False)
 
     # High
 
     embed.add_embed_field(
-        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {pytz.timezone('UTC').localize(datetime.datetime.fromtimestamp(high['dt'])).hour - datetime.datetime.now().hour} hours""", inline=False)
+        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {high_time_relative} hours""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
