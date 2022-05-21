@@ -35,8 +35,9 @@ fig = px.line(x=[i for i in range(0, time_differential + 1)],
               y=[data['hourly'][i]['pressure'] -
                   STANDARD_PRESSURE for i in range(0, time_differential + 1)],
               title="Pressure vs. Time",
-              title_x=0.5,
               labels=dict(x="Time (Now to End of Day in Hours)", y="Difference from STP"))
+
+fig.update_layout(title_x=0.5)  # centers title
 
 # redefines the y axis to include 0 if it doesn't already
 if not (high['pressure'] - STANDARD_PRESSURE > 0 and low['pressure'] - STANDARD_PRESSURE < 0):
