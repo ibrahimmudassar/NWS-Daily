@@ -35,9 +35,7 @@ fig = px.line(x=[i for i in range(0, time_differential + 1)],
               y=[data['hourly'][i]['pressure'] -
                   STANDARD_PRESSURE for i in range(0, time_differential + 1)],
               title="Pressure vs. Time",
-              labels=dict(x="Time (Now to End of Day in Hours)", y="Difference from STP"))
-
-fig.update_layout(title_x=0.5)  # centers title
+              labels=dict(x="Time (In Hours Since)", y="Difference from STP"))
 
 # redefines the y axis to include 0 if it doesn't already
 if not (high['pressure'] - STANDARD_PRESSURE > 0 and low['pressure'] - STANDARD_PRESSURE < 0):
@@ -60,11 +58,11 @@ def embed_to_discord():
 
     # Low
     embed.add_embed_field(
-        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(low['dt']).hour - current_hour} hours""", inline=False)
+        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(low['dt']).hour - datetime.datetime.now().hour} hours""", inline=False)
 
     # High
     embed.add_embed_field(
-        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(high['dt']).hour - current_hour} hours""", inline=False)
+        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(high['dt']).hour - datetime.datetime.now().hour} hours""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
