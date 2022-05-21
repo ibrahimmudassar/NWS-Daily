@@ -64,12 +64,16 @@ def embed_to_discord():
     embed = DiscordEmbed(title="Pressure Today", color="242491")
 
     # Low
+    low_difference = pytz.timezone('UTC').localize(
+        datetime.datetime.fromtimestamp(low['dt'])).hour - datetime.datetime.now().hour
     embed.add_embed_field(
-        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {pytz.timezone('UTC').localize(datetime.datetime.fromtimestamp(low['dt'])).hour - datetime.datetime.now().hour} hours""", inline=False)
+        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {low_difference} hours""", inline=False)
 
     # High
+    high_difference = pytz.timezone('UTC').localize(
+        datetime.datetime.fromtimestamp(high['dt'])).hour - datetime.datetime.now().hour
     embed.add_embed_field(
-        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {pytz.timezone('UTC').localize(datetime.datetime.fromtimestamp(high['dt'])).hour - datetime.datetime.now().hour} hours""", inline=False)
+        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {high_difference} hours""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
@@ -88,4 +92,4 @@ def embed_to_discord():
     webhook.execute()
 
 
-# embed_to_discord()
+embed_to_discord()
