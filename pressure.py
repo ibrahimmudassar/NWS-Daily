@@ -47,9 +47,13 @@ if not (high['pressure'] - STANDARD_PRESSURE > 0 and low['pressure'] - STANDARD_
             range=[0, (high['pressure'] - STANDARD_PRESSURE) + margin])
 
 fig.write_image("fig1.png")
+high_time = datetime.datetime.fromtimestamp(high['dt'])  # naive
+high_time_aware = pytz.timezone('US/Eastern').localize(high_time)
+print(high_time_aware.astimezone(pytz.timezone("UTC")).hour)
+print(high_time)
 
-print(datetime.datetime.fromtimestamp(high['dt']).hour)
-print(datetime.datetime.now().hour)
+print()
+print(datetime.datetime.now(pytz.timezone('UTC')).hour)
 
 
 def embed_to_discord():
@@ -61,11 +65,11 @@ def embed_to_discord():
 
     # Low
     embed.add_embed_field(
-        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(low['dt']).hour - datetime.datetime.now().hour} hours""", inline=False)
+        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {pytz.timezone('UTC').localize(datetime.datetime.fromtimestamp(low['dt'])).hour - datetime.datetime.now().hour} hours""", inline=False)
 
     # High
     embed.add_embed_field(
-        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(high['dt']).hour - datetime.datetime.now().hour} hours""", inline=False)
+        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {pytz.timezone('UTC').localize(datetime.datetime.fromtimestamp(high['dt'])).hour - datetime.datetime.now().hour} hours""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
