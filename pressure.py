@@ -3,10 +3,11 @@ from environs import Env  # For environment variables
 import datetime
 import plotly.express as px
 from discord_webhook import DiscordEmbed, DiscordWebhook  # Connect to discord
+import pytz
 
 
 # get the current hour
-current_hour = datetime.datetime.now().hour
+current_hour = datetime.datetime.now(pytz.timezone('US/Eastern')).hour
 # finds the hours between now and midnight
 time_differential = 24 - current_hour
 
@@ -17,32 +18,34 @@ env.read_env()  # read .env file, if it exists
 data = requests.get(
     "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env('API_KEY')).json()
 
-# find the highest pressure point (takes the object so i can extract the time at that pressure)
-high = data['hourly'][0]
-for i in range(0, time_differential + 1):
-    if data['hourly'][i]['pressure'] > high['pressure']:
-        high = data['hourly'][i]
+# this is a list of hour objects that have data sorted by their pressure
+list_of_hours = sorted([data['hourly'][k] for k in range(
+    0, time_differential + 1)], key=lambda x: x['pressure'])
+
+low = list_of_hours[0]
+high = list_of_hours[-1]
 
 
-# find the lowest pressure point (takes the object so i can extract the time at that pressure)
-low = data['hourly'][0]
-for i in range(0, time_differential + 1):
-    if data['hourly'][i]['pressure'] < low['pressure']:
-        low = data['hourly'][i]
+# baseline to measure the difference in on the graph
+STANDARD_PRESSURE = 1013.25
+margin = 0.25  # margin above and below the highest and lowest values to give some space
 
 # defines the graph
 fig = px.line(x=[i for i in range(0, time_differential + 1)],
               y=[data['hourly'][i]['pressure'] -
-                  1013.25 for i in range(0, time_differential + 1)],
+                  STANDARD_PRESSURE for i in range(0, time_differential + 1)],
               title="Pressure vs. Time",
-              labels=dict(x="Time (In Hours Since)", y="Difference from STP"))
+              title_x=0.5,
+              labels=dict(x="Time (Now to End of Day in Hours)", y="Difference from STP"))
 
-# redefnes the y axis to include 0 if it doesn't already
-if not (high['pressure'] - 1013.25 > 0 and low['pressure'] - 1013.25 < 0):
-    if high['pressure'] - 1013.25 < 0:
-        fig.update_yaxes(range=[low['pressure'] - 1013.25, 0])
-    elif low['pressure'] - 1013.25 > 0:
-        fig.update_yaxes(range=[0, high['pressure'] - 1013.25])
+# redefines the y axis to include 0 if it doesn't already
+if not (high['pressure'] - STANDARD_PRESSURE > 0 and low['pressure'] - STANDARD_PRESSURE < 0):
+    if high['pressure'] - STANDARD_PRESSURE < 0:
+        fig.update_yaxes(
+            range=[(low['pressure'] - STANDARD_PRESSURE) + margin, 0])
+    elif low['pressure'] - STANDARD_PRESSURE > 0:
+        fig.update_yaxes(
+            range=[0, (high['pressure'] - STANDARD_PRESSURE) + margin])
 
 fig.write_image("fig1.png")
 
@@ -56,11 +59,11 @@ def embed_to_discord():
 
     # Low
     embed.add_embed_field(
-        name="Low", value=f"""{low['pressure'] - 1013.25} hPa In {datetime.datetime.fromtimestamp(low['dt']).hour - current_hour} hours""", inline=False)
+        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(low['dt']).hour - current_hour} hours""", inline=False)
 
     # High
     embed.add_embed_field(
-        name="High", value=f"""{high['pressure'] - 1013.25} hPa In {datetime.datetime.fromtimestamp(high['dt']).hour - current_hour} hours""", inline=False)
+        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {datetime.datetime.fromtimestamp(high['dt']).hour - current_hour} hours""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
