@@ -48,6 +48,9 @@ if not (high['pressure'] - STANDARD_PRESSURE > 0 and low['pressure'] - STANDARD_
 
 fig.write_image("fig1.png")
 
+print(datetime.datetime.fromtimestamp(high['dt']).hour)
+print(datetime.datetime.now().hour)
+
 
 def embed_to_discord():
     # Webhooks to send to
@@ -81,4 +84,4 @@ def embed_to_discord():
     webhook.execute()
 
 
-embed_to_discord()
+# embed_to_discord()
