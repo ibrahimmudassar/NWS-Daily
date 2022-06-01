@@ -1,15 +1,9 @@
 import requests
 from environs import Env  # For environment variables
 from datetime import datetime
-import plotly.express as px
+import plotly.graph_objects as go
 from discord_webhook import DiscordEmbed, DiscordWebhook  # Connect to discord
 import pytz
-
-
-# get the current hour
-current_hour = datetime.now(pytz.timezone('US/Eastern'))
-# finds the hours between now and midnight
-time_differential = 24 - current_hour.hour
 
 # Setting up environment variables
 env = Env()
@@ -18,6 +12,10 @@ env.read_env()  # read .env file, if it exists
 data = requests.get(
     "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env('API_KEY')).json()
 
+# get the current hour
+current_hour = datetime.now(pytz.timezone('US/Eastern'))
+# finds the hours between now and midnight
+time_differential = 24 - current_hour.hour
 
 # this is a list of hour objects that have data sorted by their pressure
 list_of_hours = sorted([data['hourly'][k] for k in range(
@@ -27,38 +25,49 @@ low = list_of_hours[0]
 high = list_of_hours[-1]
 
 
-# baseline to measure the difference in on the graph
+# baseline to measure the difference in on the graph in hPa
 STANDARD_PRESSURE = 1013.25
-margin = 0.25  # margin above and below the highest and lowest values to give some space
 
-# defines the graph
-fig = px.line(x=[i for i in range(0, time_differential + 1)],
+fig = go.Figure()
+
+fig.add_trace(go.Scatter(
+              x=[i for i in range(0, time_differential + 1)],
               y=[data['hourly'][i]['pressure'] -
-                  STANDARD_PRESSURE for i in range(0, time_differential + 1)],
-              title="Pressure vs. Time",
-              labels=dict(x="Time (In Hours Since)", y="Difference from STP"))
+                 STANDARD_PRESSURE for i in range(0, time_differential + 1)],
+              fill='tozeroy',
+              mode='lines'
+              ))
 
-# redefines the y axis to include 0 if it doesn't already
-if not (high['pressure'] - STANDARD_PRESSURE > 0 and low['pressure'] - STANDARD_PRESSURE < 0):
-    if high['pressure'] - STANDARD_PRESSURE < 0:
-        fig.update_yaxes(
-            range=[(low['pressure'] - STANDARD_PRESSURE) + margin, 0])
-    elif low['pressure'] - STANDARD_PRESSURE > 0:
-        fig.update_yaxes(
-            range=[0, (high['pressure'] - STANDARD_PRESSURE) + margin])
+fig.update_yaxes(ticklabelstep=2)
+
+# Labels
+fig.update_layout(title={'text': 'Pressure vs. Time', 'x': 0.5, 'xanchor': 'center'},
+                  yaxis_zeroline=True,
+                  xaxis_zeroline=True,
+                  xaxis_title="Time (In Hours Since)",
+                  yaxis_title="Difference from STP (In hPa)")
+
+# Attribution
+fig.add_annotation(text="By: Ibrahim Mudassar",
+                   xref="paper", yref="paper",
+                   x=1, y=-0.14,
+                   showarrow=False,
+                   align="center",
+                   font=dict(size=9))
+
 
 fig.write_image("fig1.png")
 
 
 high_time_absolute = pytz.timezone(
-    'UTC').localize(datetime.fromtimestamp(high['dt']))  # takes the UTC Time and makes it time aware
+    'UTC').localize(datetime.fromtimestamp(high['dt']))  # takes the UTC Time and makes it timezone aware
 high_time_relative = high_time_absolute - current_hour
 # rounded to the nearest hour
 high_time_relative = round(high_time_relative.total_seconds() / 3600)
 
 
 low_time_absolute = pytz.timezone(
-    'UTC').localize(datetime.fromtimestamp(low['dt']))
+    'UTC').localize(datetime.fromtimestamp(low['dt']))  # takes the UTC Time and makes it timezone aware
 low_time_relative = low_time_absolute - current_hour
 # rounded to the nearest hour
 low_time_relative = round(low_time_relative.total_seconds() / 3600)
