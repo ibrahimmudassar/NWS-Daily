@@ -18,11 +18,25 @@ current_hour = datetime.now(pytz.timezone('US/Eastern'))
 time_differential = 24 - current_hour.hour
 
 # this is a list of hour objects that have data sorted by their pressure
-list_of_hours = sorted([data['hourly'][k] for k in range(
-    0, time_differential + 1)], key=lambda x: x['pressure'])
+# list_of_hours = sorted([data['hourly'][k] for k in range(
+#     0, time_differential + 1)], key=lambda x: x['pressure'])
 
-low = list_of_hours[0]
-high = list_of_hours[-1]
+# print(list_of_hours)
+
+# low = list_of_hours[0]
+# high = list_of_hours[-1]
+
+# finds the lowest pressure throughout the time (only changes if low is lower)
+low = data['hourly'][0]
+for k in range(1, time_differential + 1):
+    if data['hourly'][k]['pressure'] < low['pressure']:
+        low = data['hourly'][k]
+
+# finds the lowest pressure throughout the time (only changes if low is lower)
+high = data['hourly'][0]
+for k in range(1, time_differential + 1):
+    if data['hourly'][k]['pressure'] >= high['pressure']:
+        high = data['hourly'][k]
 
 
 # baseline to measure the difference in on the graph in hPa
@@ -60,14 +74,14 @@ fig.write_image("fig1.png")
 
 
 high_time_absolute = pytz.timezone(
-    'UTC').localize(datetime.fromtimestamp(high['dt']))  # takes the UTC Time and makes it timezone aware
+    'US/Eastern').localize(datetime.fromtimestamp(high['dt']))  # takes the UTC Time and makes it timezone aware
 high_time_relative = high_time_absolute - current_hour
 # rounded to the nearest hour
 high_time_relative = round(high_time_relative.total_seconds() / 3600)
 
 
 low_time_absolute = pytz.timezone(
-    'UTC').localize(datetime.fromtimestamp(low['dt']))  # takes the UTC Time and makes it timezone aware
+    'US/Eastern').localize(datetime.fromtimestamp(low['dt']))  # takes the UTC Time and makes it timezone aware
 low_time_relative = low_time_absolute - current_hour
 # rounded to the nearest hour
 low_time_relative = round(low_time_relative.total_seconds() / 3600)
