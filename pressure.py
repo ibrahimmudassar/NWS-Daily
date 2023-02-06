@@ -1,53 +1,45 @@
+from datetime import datetime, timedelta, timezone
+
+import plotly.graph_objects as go
+import pytz
 import requests
 from environs import Env  # For environment variables
-from datetime import datetime
-import plotly.graph_objects as go
 from discord_webhook import DiscordEmbed, DiscordWebhook  # Connect to discord
-import pytz
 
-# Setting up environment variables
+
 env = Env()
 env.read_env()  # read .env file, if it exists
 
 data = requests.get(
-    "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env('API_KEY')).json()
+    "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + "3db9298f394d8f90379835f5b99a89df").json()
 
-# get the current hour
-current_hour = datetime.now(pytz.timezone('US/Eastern'))
-# finds the hours between now and midnight
-time_differential = 24 - current_hour.hour
+tz_string = str(datetime.now().astimezone().tzname())
+now = pytz.timezone(tz_string).localize(datetime.now())
 
-# this is a list of hour objects that have data sorted by their pressure
-# list_of_hours = sorted([data['hourly'][k] for k in range(
-#     0, time_differential + 1)], key=lambda x: x['pressure'])
-
-# print(list_of_hours)
-
-# low = list_of_hours[0]
-# high = list_of_hours[-1]
-
-# finds the lowest pressure throughout the time (only changes if low is lower)
-low = data['hourly'][0]
-for k in range(1, time_differential + 1):
-    if data['hourly'][k]['pressure'] < low['pressure']:
-        low = data['hourly'][k]
-
-# finds the lowest pressure throughout the time (only changes if low is lower)
-high = data['hourly'][0]
-for k in range(1, time_differential + 1):
-    if data['hourly'][k]['pressure'] >= high['pressure']:
-        high = data['hourly'][k]
-
+tomorrow = now + timedelta(days=1)
 
 # baseline to measure the difference in on the graph in hPa
 STANDARD_PRESSURE = 1013.25
 
+# get the current hour
+pressure_all_day = {}
+
+timezone = pytz.timezone(data['timezone'])
+for weather_by_hour in data['hourly']:
+    hour = timezone.localize(datetime.fromtimestamp(weather_by_hour['dt']))
+    if hour.date() < tomorrow.date():
+        pressure_all_day[hour] = weather_by_hour['pressure'] - \
+            STANDARD_PRESSURE
+
+hi = max(pressure_all_day, key=lambda x: pressure_all_day[x])
+lo = min(pressure_all_day, key=lambda x: pressure_all_day[x])
+
+
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
-              x=[i for i in range(0, time_differential + 1)],
-              y=[data['hourly'][i]['pressure'] -
-                 STANDARD_PRESSURE for i in range(0, time_differential + 1)],
+              x=list(pressure_all_day.keys()),
+              y=list(pressure_all_day.values()),
               fill='tozeroy',
               mode='lines'
               ))
@@ -58,7 +50,7 @@ fig.update_yaxes(ticklabelstep=2)
 fig.update_layout(title={'text': 'Pressure vs. Time', 'x': 0.5, 'xanchor': 'center'},
                   yaxis_zeroline=True,
                   xaxis_zeroline=True,
-                  xaxis_title="Time (In Hours Since)",
+                  xaxis_title="Time",
                   yaxis_title="Difference from STP (In hPa)")
 
 # Attribution
@@ -69,23 +61,7 @@ fig.add_annotation(text="By: Ibrahim Mudassar",
                    align="center",
                    font=dict(size=9))
 
-
 fig.write_image("fig1.png")
-
-
-high_time_absolute = pytz.timezone(
-    'US/Eastern').localize(datetime.fromtimestamp(high['dt']))  # takes the UTC Time and makes it timezone aware
-high_time_relative = high_time_absolute - current_hour
-# rounded to the nearest hour
-high_time_relative = round(high_time_relative.total_seconds() / 3600)
-
-
-low_time_absolute = pytz.timezone(
-    'US/Eastern').localize(datetime.fromtimestamp(low['dt']))  # takes the UTC Time and makes it timezone aware
-low_time_relative = low_time_absolute - current_hour
-# rounded to the nearest hour
-low_time_relative = round(low_time_relative.total_seconds() / 3600)
-
 
 def embed_to_discord():
     # Webhooks to send to
@@ -96,12 +72,12 @@ def embed_to_discord():
 
     # Low
     embed.add_embed_field(
-        name="Low", value=f"""{low['pressure'] - STANDARD_PRESSURE} hPa In {low_time_relative} hours""", inline=False)
+        name="Low", value=f"""{pressure_all_day[lo]} hPa at {lo.strftime("%H:%M")}""", inline=False)
 
     # High
 
     embed.add_embed_field(
-        name="High", value=f"""{high['pressure'] - STANDARD_PRESSURE} hPa In {high_time_relative} hours""", inline=False)
+        name="High", value=f"""{pressure_all_day[hi]} hPa at {hi.strftime("%H:%M")}""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
