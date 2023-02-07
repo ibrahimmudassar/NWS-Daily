@@ -18,6 +18,7 @@ now = pytz.timezone(tz_string).localize(datetime.now())
 print(now)
 
 tomorrow = now + timedelta(days=1)
+print(tomorrow)
 
 # baseline to measure the difference in on the graph in hPa
 STANDARD_PRESSURE = 1013.25
