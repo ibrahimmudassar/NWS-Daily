@@ -11,7 +11,7 @@ env = Env()
 env.read_env()  # read .env file, if it exists
 
 data = requests.get(
-    "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + "3db9298f394d8f90379835f5b99a89df").json()
+    "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env("API_KEY")).json()
 
 tz_string = str(datetime.now().astimezone().tzname())
 now = pytz.timezone(tz_string).localize(datetime.now())
@@ -63,6 +63,7 @@ fig.add_annotation(text="By: Ibrahim Mudassar",
 
 fig.write_image("fig1.png")
 
+
 def embed_to_discord():
     # Webhooks to send to
     webhook = DiscordWebhook(url=env.list("WEBHOOKS"))
@@ -96,4 +97,4 @@ def embed_to_discord():
     webhook.execute()
 
 
-embed_to_discord()
+# embed_to_discord()
