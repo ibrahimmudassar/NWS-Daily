@@ -97,4 +97,4 @@ def embed_to_discord():
     webhook.execute()
 
 
-# embed_to_discord()
+embed_to_discord()
