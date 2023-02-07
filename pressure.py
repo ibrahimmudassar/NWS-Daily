@@ -25,9 +25,9 @@ STANDARD_PRESSURE = 1013.25
 # get the current hour
 pressure_all_day = {}
 
-timezone = pytz.timezone(data['timezone'])
 for weather_by_hour in data['hourly']:
-    hour = timezone.localize(datetime.fromtimestamp(weather_by_hour['dt']))
+    hour = pytz.timezone(tz_string).localize(
+        datetime.fromtimestamp(weather_by_hour['dt']))
     print(hour)
     if hour.date() < tomorrow.date():
         pressure_all_day[hour] = weather_by_hour['pressure'] - \
