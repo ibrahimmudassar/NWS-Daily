@@ -15,6 +15,7 @@ data = requests.get(
 
 tz_string = str(datetime.now().astimezone().tzname())
 now = pytz.timezone(tz_string).localize(datetime.now())
+print(tz_string)
 print(now)
 
 tomorrow = now + timedelta(days=1)
