@@ -1,5 +1,4 @@
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import plotly.graph_objects as go
 import pytz
@@ -13,15 +12,8 @@ env.read_env()  # read .env file, if it exists
 data = requests.get(
     "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env("API_KEY")).json()
 
-tz_string = str(datetime.now().astimezone().tzname())
-print(datetime.now().astimezone().utcoffset())
-now = pytz.timezone(tz_string).localize(datetime.now())
-print(tz_string)
-print(now)
+now = datetime.now(pytz.timezone('US/Eastern'))
 
-tomorrow = now + timedelta(days=1)
-print(tomorrow)
-tomorrow_dt = time.mktime(tomorrow.date().timetuple())
 
 # baseline to measure the difference in on the graph in hPa
 STANDARD_PRESSURE = 1013.25
@@ -30,8 +22,8 @@ STANDARD_PRESSURE = 1013.25
 pressure_all_day = {}
 
 for weather_by_hour in data['hourly']:
-    if weather_by_hour['dt'] <= tomorrow_dt:
-        hour = datetime.fromtimestamp(weather_by_hour['dt'])
+    hour = datetime.fromtimestamp(weather_by_hour['dt'])
+    if hour.date() == now.date():
         print(hour)
         pressure_all_day[hour] = weather_by_hour['pressure'] - \
             STANDARD_PRESSURE
