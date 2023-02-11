@@ -23,7 +23,8 @@ STANDARD_PRESSURE = 1013.25
 pressure_all_day = {}
 
 for weather_by_hour in data['hourly']:
-    hour = datetime.fromtimestamp(weather_by_hour['dt'])
+    hour = datetime.fromtimestamp(
+        weather_by_hour['dt'], tz=pytz.timezone('US/Eastern'))
     print(hour)
     if hour.date() == now.date():
         pressure_all_day[hour] = weather_by_hour['pressure'] - \
