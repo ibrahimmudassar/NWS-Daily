@@ -1,11 +1,11 @@
+import time
 from datetime import datetime, timedelta, timezone
 
 import plotly.graph_objects as go
 import pytz
 import requests
-from environs import Env  # For environment variables
 from discord_webhook import DiscordEmbed, DiscordWebhook  # Connect to discord
-
+from environs import Env  # For environment variables
 
 env = Env()
 env.read_env()  # read .env file, if it exists
@@ -14,12 +14,14 @@ data = requests.get(
     "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env("API_KEY")).json()
 
 tz_string = str(datetime.now().astimezone().tzname())
+print(datetime.now().astimezone().utcoffset())
 now = pytz.timezone(tz_string).localize(datetime.now())
 print(tz_string)
 print(now)
 
 tomorrow = now + timedelta(days=1)
 print(tomorrow)
+tomorrow_dt = time.mktime(tomorrow.date().timetuple())
 
 # baseline to measure the difference in on the graph in hPa
 STANDARD_PRESSURE = 1013.25
@@ -28,12 +30,19 @@ STANDARD_PRESSURE = 1013.25
 pressure_all_day = {}
 
 for weather_by_hour in data['hourly']:
-    hour = pytz.timezone(tz_string).localize(
-        datetime.fromtimestamp(weather_by_hour['dt']))
-    print(hour)
-    if hour.date() < tomorrow.date():
+    if weather_by_hour['dt'] <= tomorrow_dt:
+        hour = datetime.fromtimestamp(weather_by_hour['dt'])
+        print(hour)
         pressure_all_day[hour] = weather_by_hour['pressure'] - \
             STANDARD_PRESSURE
+
+# for weather_by_hour in data['hourly']:
+#     hour = pytz.timezone(tz_string).localize(
+#         datetime.fromtimestamp(weather_by_hour['dt']))
+#     print(hour)
+#     if hour.date() < tomorrow.date():
+#         pressure_all_day[hour] = weather_by_hour['pressure'] - \
+#             STANDARD_PRESSURE
 
 hi = max(pressure_all_day, key=lambda x: pressure_all_day[x])
 lo = min(pressure_all_day, key=lambda x: pressure_all_day[x])
@@ -75,14 +84,13 @@ def embed_to_discord():
     # create embed object for webhook
     embed = DiscordEmbed(title="Pressure Today", color="242491")
 
+    # High
+    embed.add_embed_field(
+        name="High", value=f"""{pressure_all_day[hi]} hPa at {hi.strftime("%H:%M")}""", inline=False)
+
     # Low
     embed.add_embed_field(
         name="Low", value=f"""{pressure_all_day[lo]} hPa at {lo.strftime("%H:%M")}""", inline=False)
-
-    # High
-
-    embed.add_embed_field(
-        name="High", value=f"""{pressure_all_day[hi]} hPa at {hi.strftime("%H:%M")}""", inline=False)
 
     # set image
     with open("fig1.png", "rb") as f:
