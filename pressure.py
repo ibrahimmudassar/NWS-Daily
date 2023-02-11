@@ -13,6 +13,7 @@ data = requests.get(
     "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env("API_KEY")).json()
 
 now = datetime.now(pytz.timezone('US/Eastern'))
+print("now", now)
 
 
 # baseline to measure the difference in on the graph in hPa
@@ -23,8 +24,8 @@ pressure_all_day = {}
 
 for weather_by_hour in data['hourly']:
     hour = datetime.fromtimestamp(weather_by_hour['dt'])
+    print(hour)
     if hour.date() == now.date():
-        print(hour)
         pressure_all_day[hour] = weather_by_hour['pressure'] - \
             STANDARD_PRESSURE
 
