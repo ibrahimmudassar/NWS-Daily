@@ -15,6 +15,3 @@ For [pressure graphing](/pressure.py) I get data from OpenWeatherMap and then gr
 ## Self-hosting
 
 If you want to run this yourself you're going to need an OpenWeatherMap api key and atleast 1 discord webhook url. If you're not going the webhook route you can fork and use requests to send a post request of your choice.
-
-## TODO
-Theres a time conversion problem between UTC and when i print to est which I need to solve. fork and pr to contribute
