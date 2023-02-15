@@ -12,7 +12,7 @@ env.read_env()  # read .env file, if it exists
 data = requests.get(
     "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env("API_KEY")).json()
 
-now = datetime.now(pytz.timezone('US/Eastern'))
+now = datetime.now(pytz.timezone(data['timezone']))
 
 
 # baseline to measure the difference in on the graph in hPa
@@ -23,7 +23,7 @@ pressure_all_day = {}
 
 for weather_by_hour in data['hourly']:
     hour = datetime.fromtimestamp(weather_by_hour['dt'],
-                                  tz=pytz.timezone('US/Eastern'))
+                                  tz=pytz.timezone(data['timezone']))
 
     if hour.date() == now.date():
         pressure_all_day[hour] = weather_by_hour['pressure'] - \
