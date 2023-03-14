@@ -40,7 +40,8 @@ def embed_to_discord(data):
     webhook.add_embed(embed)
     webhook.execute()
 
-for i in range(1,6):
+# the range numbers should change if the time of day changes
+for i in range(3,8):
     r = requests.get("https://graphical.weather.gov/images/northeast/Wx" + str(i) + "_northeast.png")
     
     with open("precip_" + str(i) + ".png", "wb") as f:
