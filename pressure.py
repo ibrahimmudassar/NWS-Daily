@@ -1,7 +1,7 @@
 from datetime import datetime
 
+import pandas as pd
 import plotly.graph_objects as go
-import pytz
 import requests
 from discord_webhook import DiscordEmbed, DiscordWebhook  # Connect to discord
 from environs import Env  # For environment variables
@@ -9,39 +9,37 @@ from environs import Env  # For environment variables
 env = Env()
 env.read_env()  # read .env file, if it exists
 
-data = requests.get(
-    "https://api.openweathermap.org/data/2.5/onecall?lat=40.57&lon=-74.32&units=metric&exclude=minutely,daily&appid=" + env("API_KEY")).json()
-
-now = datetime.now(pytz.timezone(data['timezone']))
-
-
 # baseline to measure the difference in on the graph in hPa
 STANDARD_PRESSURE = 1013.25
 
-# get the current hour
-pressure_all_day = {}
+lat = env('LATITUDE')
+long = env('LONGITUDE')
 
-for weather_by_hour in data['hourly']:
-    hour = datetime.fromtimestamp(weather_by_hour['dt'],
-                                  tz=pytz.timezone(data['timezone']))
+data = requests.get(
+    f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&daily=weathercode&hourly=pressure_msl,surface_pressure&forecast_days=1&timezone=EST").json()
 
-    if hour.date() == now.date():
-        pressure_all_day[hour] = weather_by_hour['pressure'] - \
-            STANDARD_PRESSURE
+df = pd.DataFrame(
+    {'time': data["hourly"]["time"], 'surface_pressure': data["hourly"]["surface_pressure"], 'pressure_msl': data["hourly"]["pressure_msl"]})
 
-
-hi = max(pressure_all_day, key=lambda x: pressure_all_day[x])
-lo = min(pressure_all_day, key=lambda x: pressure_all_day[x])
-
+df["relative_pressure_msl"] = df["pressure_msl"] - STANDARD_PRESSURE
+df["relative_surface_pressure"] = df["surface_pressure"] - STANDARD_PRESSURE
 
 fig = go.Figure()
 
 fig.add_trace(go.Scatter(
-              x=list(pressure_all_day.keys()),
-              y=list(pressure_all_day.values()),
+              x=df["time"],
+              y=df["relative_pressure_msl"],
               fill='tozeroy',
-              mode='lines'
+              mode='lines',
+              name="relative_pressure_msl"
               ))
+fig.add_trace(go.Scatter(
+              x=df["time"],
+              y=df["relative_surface_pressure"],
+              fill='tozeroy',
+              mode='lines',
+              name="relative_surface_pressure"))
+
 
 fig.update_yaxes(ticklabelstep=2)
 
@@ -60,39 +58,45 @@ fig.add_annotation(text="By: Ibrahim Mudassar",
                    align="center",
                    font=dict(size=9))
 
-fig.write_image("fig1.png")
+
+fig.write_image("fig1.png", width=1080, height=720)
 
 
 def embed_to_discord():
-    # Webhooks to send to
-    webhook = DiscordWebhook(url=env.list("WEBHOOKS"))
-
     # create embed object for webhook
     embed = DiscordEmbed(title="Pressure Today", color="242491")
 
-    # High
-    embed.add_embed_field(
-        name="High", value=f"""{pressure_all_day[hi]} hPa at {hi.strftime("%H:%M")}""", inline=False)
+    elevation_url = f"https://api.open-meteo.com/v1/elevation?latitude={lat}&longitude={long}"
+    elevation = requests.get(elevation_url).json()["elevation"][0]
 
-    # Low
-    embed.add_embed_field(
-        name="Low", value=f"""{pressure_all_day[lo]} hPa at {lo.strftime("%H:%M")}""", inline=False)
+    # Elevation
+    embed.add_embed_field(name='Elevation ⛰️', value=f"{elevation} m")
+
+    # MSL High
+    msl_high = df.loc[df["relative_pressure_msl"].idxmax()]
+    msl_high_time = datetime.fromisoformat(msl_high["time"]).strftime("%H:%M")
+    embed.add_embed_field(name='MSL High', value=f"{msl_high['relative_pressure_msl']} hPa at {msl_high_time}", inline=True)
+
+    # MSL Low
+    msl_low = df.loc[df["relative_pressure_msl"].idxmin()]
+    msl_low_time = datetime.fromisoformat(msl_low["time"]).strftime("%H:%M")
+    embed.add_embed_field(name='MSL Low', value=f"{msl_low['relative_pressure_msl']} hPa at {msl_low_time}", inline=True)
 
     # set image
-    with open("fig1.png", "rb") as f:
-        webhook.add_file(file=f.read(), filename='fig1.png')
     embed.set_image(url='attachment://fig1.png')
-
-    # set thumbnail
-    embed.set_thumbnail(
-        url='http://openweathermap.org/img/wn/' + data['current']['weather'][0]['icon'] + '@4x.png')
 
     # set footer
     embed.set_footer(text='Made By Ibrahim Mudassar')
 
     # add embed object to webhook(s)
-    webhook.add_embed(embed)
-    webhook.execute()
+    for webhook_url in env.list("WEBHOOKS"):
+        webhook = DiscordWebhook(url=webhook_url)
+
+        with open("fig1.png", "rb") as f:
+            webhook.add_file(file=f.read(), filename='fig1.png')
+
+        webhook.add_embed(embed)
+        webhook.execute()
 
 
 embed_to_discord()
