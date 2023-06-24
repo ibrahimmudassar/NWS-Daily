@@ -10,7 +10,7 @@ This project has expanded from just the radar colelction to pressure graphing as
 
 For the [main file](/main.py) I scrape from the NWS webpage and use their textual API as well for added info.
 
-For [pressure graphing](/pressure.py) I get data from OpenWeatherMap and then graph it over time with python plotly. 
+For [pressure graphing](/pressure.py) I get data from [Open-Meteo](https://open-meteo.com/) and then graph it over time with python plotly. 
 
 ## Self-hosting
 
