@@ -1,4 +1,4 @@
-name: run pressure.py
+name: run precipitation.py
 
 on:
   schedule:
@@ -24,5 +24,7 @@ jobs:
       - name: execute py script # run main.py
         env:
           WEBHOOKS: ${{ secrets.WEBHOOKS }}
-          API_KEY: ${{ secrets.API_KEY }}
-        run: python pressure.py
+          LATITUDE: ${{ secrets.LATITUDE }}
+          LONGITUDE: ${{ secrets.LONGITUDE }}
+
+        run: python precipitation.py
