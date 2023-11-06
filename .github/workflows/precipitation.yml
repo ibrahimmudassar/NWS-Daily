@@ -28,3 +28,6 @@ jobs:
           LONGITUDE: ${{ secrets.LONGITUDE }}
 
         run: python precipitation.py
+
+      - name: Keepalive Workflow
+        uses: gautamkrishnar/keepalive-workflow@1.1.0
