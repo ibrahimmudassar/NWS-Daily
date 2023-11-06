@@ -25,3 +25,6 @@ jobs:
         env:
           WEBHOOKS: ${{ secrets.WEBHOOKS }}
         run: python main.py
+        
+      - name: Keepalive Workflow
+        uses: gautamkrishnar/keepalive-workflow@1.1.0
