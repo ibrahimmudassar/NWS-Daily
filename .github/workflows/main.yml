@@ -24,6 +24,8 @@ jobs:
       - name: execute py script # run main.py
         env:
           WEBHOOKS: ${{ secrets.WEBHOOKS }}
+          LATITUDE: ${{ secrets.LATITUDE }}
+          LONGITUDE: ${{ secrets.LONGITUDE }}
         run: python main.py
         
       - name: Keepalive Workflow
